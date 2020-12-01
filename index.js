@@ -70,8 +70,20 @@ async function recGetLinks(visited, rootUrl) {
   return leaves
 }
 
-recGetLinks([], rootUrl).then((l) =>
-  fs.writeFileSync("links.json", JSON.stringify(l))
-)
+recGetLinks([], rootUrl).then((l) => {
+  const base = "https://github.com/"
+  const links = l
+    .filter((url) => url.toLowerCase().includes(".pdf"))
+    .map((url) => {
+      const [, , , , , category, title] = url.split("/")
+      return {
+        title: title.replace(".pdf", "").split("%20").join(" "),
+        category,
+        url: new URL(url, base).toString(),
+      }
+    })
+
+  return fs.writeFileSync("links.json", JSON.stringify(links))
+})
 
 // const url = "https://github.com/FreeOpenU/tbooks"
