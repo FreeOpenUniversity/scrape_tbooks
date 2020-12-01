@@ -1,21 +1,32 @@
 const cheerio = require("cheerio")
-const { log } = require("console")
+const { createHash } = require("crypto")
 const axios = require("axios").default
 const fs = require("fs")
-const { join } = require("url")
+const path = require("path")
+
+function hash(string) {
+  var hash = 0
+  if (string.length == 0) {
+    return hash
+  }
+  for (var i = 0; i < string.length; i++) {
+    var char = string.charCodeAt(i)
+    hash = (hash << 5) - hash + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  return hash
+}
 
 function cacheFact(base) {
-  let cacheMap = {}
-  let i = 0
+  const dir = "cache"
   const cache = {
     async get(url) {
       const absoluteUrl = new URL(url, base).toString()
-      if (fs.existsSync(cacheMap[absoluteUrl]))
-        return fs.readFileSync(cacheMap[absoluteUrl]).toString()
-
-      cacheMap[absoluteUrl] = `${i++}.html`
+      const fname = `${hash(absoluteUrl)}.html`
+      const cachePath = path.join(dir, fname)
+      if (fs.existsSync(cachePath)) return fs.readFileSync(cachePath).toString()
       const { data } = await axios.get(absoluteUrl)
-      fs.writeFileSync(cacheMap[absoluteUrl], data)
+      fs.writeFileSync(cachePath, data)
       return data
     },
   }
