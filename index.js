@@ -1,5 +1,6 @@
 const express = require("express");
 const _ = require("lodash");
+const { refreshLinks } = require("./scrape");
 const links = JSON.parse(
   require("fs").readFileSync("links.json").toString()
 ).map((l, i) => ({ ...l, id: i }));
@@ -14,19 +15,27 @@ const categories = _.uniq(
 
 const linksByTitle = _.keyBy(links, "title");
 
-app.get("/books", (req, res) => {
-  const image_url = "https://via.placeholder.com/150";
+app.post("/refreshLinks", (req, res) => {
+  refreshLinks.then(res.json("done"));
+});
+
+app.get("/", (req, res) => {
+  res.json({ endpoints: ["/book", "/category"] });
+});
+
+app.get("/book", (req, res) => {
+  const image = "https://via.placeholder.com/150";
   const categories = req.query.category?.split(",");
-  let books;
+  let books = links;
   if (categories) {
     books = categories.map((cat) => linksByCategory[cat]).flat();
   }
-  booksWithImages = boks.map((book) => ({ ...book, image }));
-  res.send(JSON.stringify(booksWithImages));
+  const booksWithImages = books.map((book) => ({ ...book, image }));
+  res.json(booksWithImages);
 });
 
 app.get("/category", (req, res) => {
-  res.send(JSON.stringify(categories));
+  res.json(categories);
 });
 
 app.listen(port, () => {
