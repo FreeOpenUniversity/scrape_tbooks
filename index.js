@@ -1,89 +1,34 @@
-const cheerio = require("cheerio")
-const { createHash } = require("crypto")
-const axios = require("axios").default
-const fs = require("fs")
-const path = require("path")
+const express = require("express");
+const _ = require("lodash");
+const links = JSON.parse(
+  require("fs").readFileSync("links.json").toString()
+).map((l, i) => ({ ...l, id: i }));
+const app = express();
+const port = process.env.PORT || 5000;
 
-function hash(string) {
-  var hash = 0
-  if (string.length == 0) {
-    return hash
+const linksByCategory = _.keyBy(links, "category");
+
+const categories = _.uniq(
+  links.map(({ category }) => category)
+).map((category, id) => ({ category, id }));
+
+const linksByTitle = _.keyBy(links, "title");
+
+app.get("/books", (req, res) => {
+  const image_url = "https://via.placeholder.com/150";
+  const categories = req.query.category?.split(",");
+  let books;
+  if (categories) {
+    books = categories.map((cat) => linksByCategory[cat]).flat();
   }
-  for (var i = 0; i < string.length; i++) {
-    var char = string.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash = hash & hash // Convert to 32bit integer
-  }
-  return hash
-}
+  booksWithImages = boks.map((book) => ({ ...book, image }));
+  res.send(JSON.stringify(booksWithImages));
+});
 
-function cacheFact(base) {
-  const dir = "cache"
-  const cache = {
-    async get(url) {
-      const absoluteUrl = new URL(url, base).toString()
-      const fname = `${hash(absoluteUrl)}.html`
-      const cachePath = path.join(dir, fname)
-      if (fs.existsSync(cachePath)) return fs.readFileSync(cachePath).toString()
-      const { data } = await axios.get(absoluteUrl)
-      fs.writeFileSync(cachePath, data)
-      return data
-    },
-  }
-  return cache
-}
+app.get("/category", (req, res) => {
+  res.send(JSON.stringify(categories));
+});
 
-/**
- * @typedef { _url }node
- */
-const cache = cacheFact("https://github.com/")
-
-async function getFileLinks(url) {
-  const html = await cache.get(url)
-  const $ = cheerio.load(html)
-  const links = $("a.js-navigation-open")
-  return $(links)
-    .map((i, link) => ({
-      text: $(link).text(),
-      url: $(link).attr("href"),
-    }))
-    .toArray()
-    .filter(({ url }) => url)
-}
-
-const rootUrl = "https://github.com/FreeOpenU/tbooks"
-
-/**
- *
- * @param {string[]} visited
- * @param {string} rootUrl
- */
-async function recGetLinks(visited, rootUrl) {
-  if (rootUrl.includes("tbooks/blob/master")) {
-    return [rootUrl.replace("tbooks/blob/master", "tbooks/raw/master")]
-  }
-  const links = await getFileLinks(rootUrl)
-  let leaves = [rootUrl]
-  for (const link of links.filter((l) => !visited.includes(l.url))) {
-    leaves = leaves.concat(await recGetLinks(leaves, link.url))
-  }
-  return leaves
-}
-
-recGetLinks([], rootUrl).then((l) => {
-  const base = "https://github.com/"
-  const links = l
-    .filter((url) => url.toLowerCase().includes(".pdf"))
-    .map((url) => {
-      const [, , , , , category, title] = url.split("/")
-      return {
-        title: title.replace(".pdf", "").split("%20").join(" "),
-        category,
-        url: new URL(url, base).toString(),
-      }
-    })
-
-  return fs.writeFileSync("links.json", JSON.stringify(links))
-})
-
-// const url = "https://github.com/FreeOpenU/tbooks"
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
