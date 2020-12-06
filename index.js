@@ -10,7 +10,12 @@ const links = JSON.parse(
 const app = express();
 const port = process.env.PORT || 5000;
 
-const linksByCategory = _.keyBy(links, "category");
+const linksByCategory = links.reduce((obj, curr) => {
+  obj[curr.category]
+    ? obj[curr.category].push(curr)
+    : (obj[curr.category] = [curr]);
+  return obj;
+}, {});
 
 const categories = _.uniq(
   links.map(({ category }) => category)
