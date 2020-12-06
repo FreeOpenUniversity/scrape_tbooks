@@ -2,8 +2,11 @@ const express = require("express");
 const _ = require("lodash");
 const { refreshLinks } = require("./scrape");
 const links = JSON.parse(
-  require("fs").readFileSync("links.json").toString()
+  require("fs")
+    .readFileSync(__dirname + "/links.json")
+    .toString()
 ).map((l, i) => ({ ...l, id: i }));
+
 const app = express();
 const port = process.env.PORT || 5000;
 
