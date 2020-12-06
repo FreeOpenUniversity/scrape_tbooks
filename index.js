@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 
 app.get("/book", (req, res) => {
   const image = "https://via.placeholder.com/150";
-  const categories = req.query.category?.split(",");
+  const categories = req.query.category && req.query.category.split(",");
   let books = links;
   if (categories) {
     books = categories.map((cat) => linksByCategory[cat]).flat();
